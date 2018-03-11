@@ -72,6 +72,7 @@
             this.wyborPlikuLabel2 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.deszyfrowanieLabel = new System.Windows.Forms.Label();
+            this.dodajUzytkownikaButton = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
@@ -89,6 +90,7 @@
             // 
             // splitContainer1.Panel1
             // 
+            this.splitContainer1.Panel1.Controls.Add(this.dodajUzytkownikaButton);
             this.splitContainer1.Panel1.Controls.Add(this.usunOdbiorceButton);
             this.splitContainer1.Panel1.Controls.Add(this.dodajOdbiorceButton);
             this.splitContainer1.Panel1.Controls.Add(this.label9);
@@ -126,7 +128,7 @@
             this.splitContainer1.Panel2.Controls.Add(this.label2);
             this.splitContainer1.Panel2.Controls.Add(this.deszyfrowanieLabel);
             this.splitContainer1.Size = new System.Drawing.Size(994, 540);
-            this.splitContainer1.SplitterDistance = 497;
+            this.splitContainer1.SplitterDistance = 487;
             this.splitContainer1.TabIndex = 0;
             // 
             // usunOdbiorceButton
@@ -528,6 +530,17 @@
             this.deszyfrowanieLabel.TabIndex = 0;
             this.deszyfrowanieLabel.Text = "Deszyfrowanie";
             // 
+            // dodajUzytkownikaButton
+            // 
+            this.dodajUzytkownikaButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 7F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
+            this.dodajUzytkownikaButton.Location = new System.Drawing.Point(131, 317);
+            this.dodajUzytkownikaButton.Name = "dodajUzytkownikaButton";
+            this.dodajUzytkownikaButton.Size = new System.Drawing.Size(75, 23);
+            this.dodajUzytkownikaButton.TabIndex = 20;
+            this.dodajUzytkownikaButton.Text = "Dodaj";
+            this.dodajUzytkownikaButton.UseVisualStyleBackColor = true;
+            this.dodajUzytkownikaButton.Click += new System.EventHandler(this.dodajUzytkownikaButton_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
@@ -596,6 +609,7 @@
         private System.Windows.Forms.Button pokazHasloButton;
         private System.Windows.Forms.Button deszyfrowanieButton;
         private System.Windows.Forms.ProgressBar deszyfrowanieProgressBar;
+        private System.Windows.Forms.Button dodajUzytkownikaButton;
     }
 }
 

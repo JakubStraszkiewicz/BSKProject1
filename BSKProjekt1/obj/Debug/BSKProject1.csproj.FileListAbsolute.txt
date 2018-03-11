@@ -7,3 +7,4 @@ C:\Users\user\Documents\Visual Studio 2017\Projects\BSKProjekt1\BSKProjekt1\obj\
 C:\Users\user\Documents\Visual Studio 2017\Projects\BSKProjekt1\BSKProjekt1\obj\Debug\BSKProject1.csproj.GenerateResource.Cache
 C:\Users\user\Documents\Visual Studio 2017\Projects\BSKProjekt1\BSKProjekt1\obj\Debug\BSKProject1.exe
 C:\Users\user\Documents\Visual Studio 2017\Projects\BSKProjekt1\BSKProjekt1\obj\Debug\BSKProject1.pdb
+C:\Users\user\Documents\Visual Studio 2017\Projects\BSKProjekt1\BSKProjekt1\obj\Debug\BSKProject1.AddUserForm.resources

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using BSKProject1;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -76,6 +77,12 @@ namespace BSKProjekt1
             folderDialog.ShowDialog();
             String lokalizacjaDeszyforwania = folderDialog.SelectedPath;
             lokalizacjaDeszyfrowaniaTextBox.Text = lokalizacjaDeszyforwania;
+        }
+
+        private void dodajUzytkownikaButton_Click(object sender, EventArgs e)
+        {
+            AddUserForm form = new AddUserForm();
+            form.Show();
         }
     }
 }

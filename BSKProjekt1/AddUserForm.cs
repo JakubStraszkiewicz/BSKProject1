@@ -10,11 +10,13 @@ using System.Windows.Forms;
 using System.Text.RegularExpressions;
 using System.Security.Cryptography;
 using System.Xml.Linq;
+using System.IO;
 
 namespace BSKProject1
 {
     public partial class AddUserForm : Form
     {
+
         private struct userKeys
         {
             public RSAParameters publicKey;
@@ -52,7 +54,9 @@ namespace BSKProject1
             if(hasloUzytkownikaTextBox.Text.Length < 8)
                 MessageBox.Show("Hasło dostępu musi składać się z co najmniej: 8 znaków",
                     "Błędne hasło", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            createUser(nazwaUzytkownikaTextBox.Text,hasloUzytkownikaTextBox.Text);
+            else
+                createUser(nazwaUzytkownikaTextBox.Text,hasloUzytkownikaTextBox.Text);
+            this.Close();
         }
 
         private userKeys generateKey()
@@ -81,12 +85,14 @@ namespace BSKProject1
                         new XElement("Modulus", user.publicKey.Modulus),
                         new XElement("P", user.publicKey.P),
                         new XElement("Q", user.publicKey.Q))
+                )
             )
-        )
-        .Save(nazwaUzytkownikaTextBox.Text + ".public");
+            .Save(nazwaUzytkownikaTextBox.Text + ".public");
+
         }
+
         private void savePrivateKey(userKeys user)
-        { 
+        {
             new XDocument(
                 new XElement("RSA",
                     new XElement("userName", nazwaUzytkownikaTextBox.Text),
@@ -99,40 +105,38 @@ namespace BSKProject1
                         new XElement("Modulus", user.privateKey.Modulus),
                         new XElement("P", user.privateKey.P),
                         new XElement("Q", user.privateKey.Q))
+                )
             )
-        )
-        .Save(nazwaUzytkownikaTextBox.Text + ".private");
+            .Save(nazwaUzytkownikaTextBox.Text + ".private");
 
-            //TO DO 
-            // Funkcja skrotu i zaszyfrowanie pliku w trybie ECB
+            String path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, nazwaUzytkownikaTextBox + ".private");
+            CryptoService service = new CryptoService();
+            List<string> encryptedMessage = new List<string>();
+
+            string[] message = File.ReadAllLines(path);
+
+            for (int j=0;j<message.Length;j++)
+                encryptedMessage.Add(service.aesEncoding(service.createSha1Hash(hasloUzytkownikaTextBox.Text,
+                                     lengthFromBitsToBytes(128)), "ECB", 128, message[j]));
+
+            File.WriteAllLines(path, encryptedMessage.ToArray());
+
+            
+             // DECODING RSA!!!!!!!!!!!!!!!!!!!!!!!!1
+          /*  using (System.IO.StreamReader fileReader = new System.IO.StreamReader(path + "1"))
+            {
+                while ((line = fileReader.ReadLine()) != null)
+                {
+                    encrypted = service.aesDecoding(service.createSha1Hash("haslo123", lengthFromBitsToBytes(128)), "ECB", 128, line);
+                    Console.WriteLine(encrypted);
+                }
+            }*/
         }
 
-
-
-
-        // Dziala przyda sie pozniej kodowanie dokodowanie RSA
-
-        /* private byte[] encrypt(string message, userKeys user)
-         {
-             byte[] encrypted;
-             using (var rsa = new RSACryptoServiceProvider(2048))
-             {
-                 rsa.ImportParameters(user.publicKey);
-                 encrypted = rsa.Encrypt(Encoding.UTF8.GetBytes(message), true);
-             }
-             return encrypted;
-         }
-
-         private string decrypt(byte[] message, userKeys user)
-         {
-             byte[] decrypted;
-             using (var rsa = new RSACryptoServiceProvider(2048))
-             {
-                 rsa.ImportParameters(user.privateKey);
-                 decrypted = rsa.Decrypt(message, true);
-             }
-             return Encoding.UTF8.GetString(decrypted);
-         }*/
+        private int lengthFromBitsToBytes(int lengthInBits)
+        {
+            return lengthInBits / 8;
+        }
 
         private void createUser(string name, String password)
         {
@@ -141,6 +145,7 @@ namespace BSKProject1
             user = generateKey();
             savePublicKey(user);
             savePrivateKey(user);
+           
             /* String abc = "to tekst jawny";
              byte[] encrypted = encrypt(abc, user);
              MessageBox.Show(abc+" "+encrypted,

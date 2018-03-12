@@ -14,6 +14,9 @@ namespace BSKProjekt1
 {
     public partial class Form1 : Form
     {
+
+        private static string workSpace = AppDomain.CurrentDomain.BaseDirectory;
+
         public Form1()
         {
             InitializeComponent();
@@ -21,6 +24,15 @@ namespace BSKProjekt1
             dlugoscKluczaComboBox.SelectedIndex = 2;
             dlugoscPodblokuComboBox.Enabled = false;
             dlugoscPodblokuComboBox.SelectedIndex = 4;
+            DirectoryInfo directory = new DirectoryInfo(workSpace);
+            List<ListViewItem> items = new List<ListViewItem>();
+            FileInfo[] files = directory.GetFiles();
+            for(int i=0;i<files.Length;i++)
+            {
+                if(files[i].Name.Contains(".public"))
+                    items.Add(new ListViewItem(files[i].Name));
+            }
+            uzytkownicyListView.Items.AddRange(items.ToArray());
         }
 
         private void trybSzyfrowaniaComboBox_SelectedIndexChanged(object sender, EventArgs e)
@@ -51,8 +63,14 @@ namespace BSKProjekt1
         {
             OpenFileDialog fileDialog = new OpenFileDialog();
             fileDialog.ShowDialog();
-            FileInfo plikSzyfrowania = new FileInfo(fileDialog.FileName);
-            plikSzyfrowaniaTextBox.Text = plikSzyfrowania.FullName;
+            try
+            {
+                FileInfo plikSzyfrowania = new FileInfo(fileDialog.FileName);
+                plikSzyfrowaniaTextBox.Text = plikSzyfrowania.FullName;
+            }catch(ArgumentException ex)
+            {
+                Console.WriteLine(ex);
+            }
         }
 
         private void lokalizacjaSzyfrowaniaButton_Click(object sender, EventArgs e)

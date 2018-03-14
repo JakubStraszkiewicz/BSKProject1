@@ -33,7 +33,7 @@ namespace BSKProject1
             return hash;
         }
 
-        public string aesEncoding(string key, String mode, int blockSize, string message)
+        public string aesEncoding(string key, String mode, int blockSize, string message, byte[] iv)
         {
             byte[] encrypted;
 
@@ -43,7 +43,7 @@ namespace BSKProject1
                 aes.KeySize = a.Length*8;
                 aes.Key = ASCIIEncoding.ASCII.GetBytes(key);
                 aes.BlockSize = blockSize;
-                aes.GenerateIV();
+                aes.IV = iv;
 
                 switch (mode)
                 {
@@ -53,32 +53,26 @@ namespace BSKProject1
                     case "CBC":
                         aes.Mode = CipherMode.CBC;
                         break;
-                    case "CFB":
-                        aes.Mode = CipherMode.CFB;
-                        break;
-                    case "OFB:":
-                        aes.Mode = CipherMode.OFB;
-                        break;
                 }
-
+                aes.Padding = PaddingMode.PKCS7;
                 ICryptoTransform transform = aes.CreateEncryptor();
                 encrypted = transform.TransformFinalBlock(ASCIIEncoding.ASCII.GetBytes(message), 0, message.Length);
             }
             return Convert.ToBase64String(encrypted);
         }
 
-        public string aesDecoding(string key, String mode, int blockSize, string message)
+        public string aesDecoding(string key, String mode, int blockSize, string message, byte[] iv)
         {
             byte[] decrypted;
 
             using (AesCryptoServiceProvider aes = new AesCryptoServiceProvider())
             {
-                byte[] a = ASCIIEncoding.ASCII.GetBytes(key);
-                aes.KeySize = a.Length * 8;
+                byte[] byteKey = ASCIIEncoding.ASCII.GetBytes(key);
+                aes.KeySize = byteKey.Length * 8;
                 aes.Key = ASCIIEncoding.ASCII.GetBytes(key);
                 aes.BlockSize = blockSize;
-                aes.GenerateIV();
-
+                aes.IV = iv;
+               
                 switch (mode)
                 {
                     case "ECB":
@@ -87,13 +81,8 @@ namespace BSKProject1
                     case "CBC":
                         aes.Mode = CipherMode.CBC;
                         break;
-                    case "CFB":
-                        aes.Mode = CipherMode.CFB;
-                        break;
-                    case "OFB:":
-                        aes.Mode = CipherMode.OFB;
-                        break;
                 }
+                aes.Padding = PaddingMode.PKCS7;
                 ICryptoTransform transform = aes.CreateDecryptor();
                 byte[] encryptedMessage = Convert.FromBase64String(message);
                 decrypted = transform.TransformFinalBlock(encryptedMessage, 0, encryptedMessage.Length);

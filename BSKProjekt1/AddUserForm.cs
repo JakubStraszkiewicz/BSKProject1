@@ -11,11 +11,13 @@ using System.Text.RegularExpressions;
 using System.Security.Cryptography;
 using System.Xml.Linq;
 using System.IO;
+using BSKProjekt1;
 
 namespace BSKProject1
 {
     public partial class AddUserForm : Form
     {
+        private Form1 form;
 
         private struct userKeys
         {
@@ -23,9 +25,10 @@ namespace BSKProject1
             public RSAParameters privateKey;
         }
 
-        public AddUserForm()
+        public AddUserForm(Form1 form)
         {
             InitializeComponent();
+            this.form = form;
         }
 
         private void dodajUzytkownikaButton_Click(object sender, EventArgs e)
@@ -35,7 +38,7 @@ namespace BSKProject1
             var hasLowerChar = new Regex(@"[a-z]+");
             var hasSymbols = new Regex(@"[!@#$%^&*()_+=\[{\]};:<>|./?,-]");
 
-            if(!hasUpperChar.IsMatch(hasloUzytkownikaTextBox.Text))
+            if (!hasUpperChar.IsMatch(hasloUzytkownikaTextBox.Text))
                 MessageBox.Show("Hasło dostępu musi składać się z co najmniej: jednej dużej litery",
                     "Błędne hasło", MessageBoxButtons.OK, MessageBoxIcon.Error);
             else
@@ -51,12 +54,19 @@ namespace BSKProject1
                 MessageBox.Show("Hasło dostępu musi składać się z co najmniej: jednego znaku specjalnego",
                     "Błędne hasło", MessageBoxButtons.OK, MessageBoxIcon.Error);
             else
-            if(hasloUzytkownikaTextBox.Text.Length < 8)
+            if (hasloUzytkownikaTextBox.Text.Length < 8)
                 MessageBox.Show("Hasło dostępu musi składać się z co najmniej: 8 znaków",
                     "Błędne hasło", MessageBoxButtons.OK, MessageBoxIcon.Error);
             else
-                createUser(nazwaUzytkownikaTextBox.Text,hasloUzytkownikaTextBox.Text);
-            this.Close();
+            if (!form.checkTextExistListView(nazwaUzytkownikaTextBox.Text))
+                MessageBox.Show("Uzytkownik o podanej nazwie istnieje",
+                    "Błędna nazwa", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            else
+            {
+                createUser(nazwaUzytkownikaTextBox.Text, hasloUzytkownikaTextBox.Text);
+                this.Close();
+                form.uzytkownicylistViewUpdate();
+            }
         }
 
         private userKeys generateKey()
@@ -109,19 +119,22 @@ namespace BSKProject1
             )
             .Save(nazwaUzytkownikaTextBox.Text + ".private");
 
-            String path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, nazwaUzytkownikaTextBox + ".private");
+            String path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, nazwaUzytkownikaTextBox.Text + ".private");
             CryptoService service = new CryptoService();
+            AesCryptoServiceProvider aes = new AesCryptoServiceProvider();
             List<string> encryptedMessage = new List<string>();
 
             string[] message = File.ReadAllLines(path);
 
+            aes.GenerateIV();
+
             for (int j=0;j<message.Length;j++)
                 encryptedMessage.Add(service.aesEncoding(service.createSha1Hash(hasloUzytkownikaTextBox.Text,
-                                     lengthFromBitsToBytes(128)), "ECB", 128, message[j]));
+                                     lengthFromBitsToBytes(128)), "ECB", 128, message[j],aes.IV));
 
             File.WriteAllLines(path, encryptedMessage.ToArray());
 
-            
+           
              // DECODING RSA!!!!!!!!!!!!!!!!!!!!!!!!1
           /*  using (System.IO.StreamReader fileReader = new System.IO.StreamReader(path + "1"))
             {

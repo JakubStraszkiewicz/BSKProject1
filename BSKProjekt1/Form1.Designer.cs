@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+            this.dodajUzytkownikaButton = new System.Windows.Forms.Button();
             this.usunOdbiorceButton = new System.Windows.Forms.Button();
             this.dodajOdbiorceButton = new System.Windows.Forms.Button();
             this.label9 = new System.Windows.Forms.Label();
@@ -72,7 +73,6 @@
             this.wyborPlikuLabel2 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.deszyfrowanieLabel = new System.Windows.Forms.Label();
-            this.dodajUzytkownikaButton = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
@@ -128,8 +128,19 @@
             this.splitContainer1.Panel2.Controls.Add(this.label2);
             this.splitContainer1.Panel2.Controls.Add(this.deszyfrowanieLabel);
             this.splitContainer1.Size = new System.Drawing.Size(994, 540);
-            this.splitContainer1.SplitterDistance = 487;
+            this.splitContainer1.SplitterDistance = 496;
             this.splitContainer1.TabIndex = 0;
+            // 
+            // dodajUzytkownikaButton
+            // 
+            this.dodajUzytkownikaButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 7F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
+            this.dodajUzytkownikaButton.Location = new System.Drawing.Point(131, 317);
+            this.dodajUzytkownikaButton.Name = "dodajUzytkownikaButton";
+            this.dodajUzytkownikaButton.Size = new System.Drawing.Size(75, 23);
+            this.dodajUzytkownikaButton.TabIndex = 20;
+            this.dodajUzytkownikaButton.Text = "Dodaj";
+            this.dodajUzytkownikaButton.UseVisualStyleBackColor = true;
+            this.dodajUzytkownikaButton.Click += new System.EventHandler(this.dodajUzytkownikaButton_Click);
             // 
             // usunOdbiorceButton
             // 
@@ -139,6 +150,7 @@
             this.usunOdbiorceButton.TabIndex = 19;
             this.usunOdbiorceButton.Text = "<";
             this.usunOdbiorceButton.UseVisualStyleBackColor = true;
+            this.usunOdbiorceButton.Click += new System.EventHandler(this.usunOdbiorceButton_Click);
             // 
             // dodajOdbiorceButton
             // 
@@ -149,6 +161,7 @@
             this.dodajOdbiorceButton.TabStop = false;
             this.dodajOdbiorceButton.Text = ">";
             this.dodajOdbiorceButton.UseVisualStyleBackColor = true;
+            this.dodajOdbiorceButton.Click += new System.EventHandler(this.dodajOdbiorceButton_Click);
             // 
             // label9
             // 
@@ -192,6 +205,7 @@
             this.szyforwanieButton.TabIndex = 13;
             this.szyforwanieButton.Text = "Szyfruj";
             this.szyforwanieButton.UseVisualStyleBackColor = true;
+            this.szyforwanieButton.Click += new System.EventHandler(this.szyforwanieButton_Click);
             // 
             // szyfrowanieProgressBar
             // 
@@ -529,17 +543,6 @@
             this.deszyfrowanieLabel.Size = new System.Drawing.Size(170, 29);
             this.deszyfrowanieLabel.TabIndex = 0;
             this.deszyfrowanieLabel.Text = "Deszyfrowanie";
-            // 
-            // dodajUzytkownikaButton
-            // 
-            this.dodajUzytkownikaButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 7F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(238)));
-            this.dodajUzytkownikaButton.Location = new System.Drawing.Point(131, 317);
-            this.dodajUzytkownikaButton.Name = "dodajUzytkownikaButton";
-            this.dodajUzytkownikaButton.Size = new System.Drawing.Size(75, 23);
-            this.dodajUzytkownikaButton.TabIndex = 20;
-            this.dodajUzytkownikaButton.Text = "Dodaj";
-            this.dodajUzytkownikaButton.UseVisualStyleBackColor = true;
-            this.dodajUzytkownikaButton.Click += new System.EventHandler(this.dodajUzytkownikaButton_Click);
             // 
             // Form1
             // 

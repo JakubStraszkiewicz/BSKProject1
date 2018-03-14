@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<EncryptedFileHeader>
+  <Algorithm>AES</Algorithm>
+  <KeySize>256</KeySize>
+  <BlockSize>128</BlockSize>
+  <Subblock>128</Subblock>
+  <Mode>ECB</Mode>
+  <IV>Y6zYd2zFKFkbpP+G+Y6Jaw==</IV>
+  <Extension>txt</Extension>
+  <ApprovedUsers>
+    <User>
+      <Name>Kuba</Name>
+      <sessionKey>aEdvMwY/RF9/Pz8/AhY/Py8/dD8/Q0cLbwM/ZjsqND8=</sessionKey>
+    </User>
+  </ApprovedUsers>
+</EncryptedFileHeader>

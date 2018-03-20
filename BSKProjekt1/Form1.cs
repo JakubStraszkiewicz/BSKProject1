@@ -278,10 +278,12 @@ namespace BSKProjekt1
             }
 
             writer.WriteEndElement();
-            writer.WriteStartElement("File");
+            writer.WriteStartElement("EnFile");
+            writer.WriteWhitespace("\n");
             foreach (byte[] block in message)
             {
                 writer.WriteBase64(block, 0, block.Length);
+                writer.WriteWhitespace("\n");
             }
             writer.WriteEndElement();
             writer.WriteEndDocument();
@@ -295,6 +297,11 @@ namespace BSKProjekt1
             writer.WriteValue(value);
             writer.WriteEndElement();
         }
+        
+        private string takeValueFromNode(string node)
+        {
+            return node.Substring(node.IndexOf(">") + 1, node.LastIndexOf("<") - node.IndexOf(">") - 1);
+        }
 
         private void deszyfrowanieButton_Click(object sender, EventArgs e)
         {
@@ -304,73 +311,138 @@ namespace BSKProjekt1
             byte[] sessionKey = { };
             byte[] iv = { };
             byte[] encryptedFile = { };
+            byte[] blockOfFile = { };
+            bool fileDecryptionBegin = false;
             string extension = "";
             string mode = "";
-
-            XmlDocument document = new XmlDocument();
-            document.Load(plikDeszyfrowaniaTextBox.Text);
-            foreach (ListViewItem item in selectedItems)
-            {
-
-                XmlNodeList exponentList = document.GetElementsByTagName("sessionKey");
-                foreach(XmlNode node in exponentList)
-                {
-                    if (node.PreviousSibling.FirstChild.Value == item.Text)
-                        sessionKey = Convert.FromBase64String(node.InnerText);
-                }
-            }
-
-            XmlNodeList extensionNode = document.GetElementsByTagName("Extension");
-            foreach (XmlNode node in extensionNode)
-            {
-                extension = node.InnerText;
-            }
-
-            XmlNodeList keySizeNode = document.GetElementsByTagName("KeySize");
-            foreach (XmlNode node in keySizeNode)
-            {
-                keySize = Convert.ToInt32(node.InnerText);
-            }
-
-            XmlNodeList fileNode = document.GetElementsByTagName("File");
-            foreach (XmlNode node in fileNode)
-            {
-                encryptedFile = Convert.FromBase64String(node.InnerText);
-            }
-
-            XmlNodeList ivNode = document.GetElementsByTagName("IV");
-            foreach (XmlNode node in ivNode)
-            {
-                iv = Convert.FromBase64String(node.InnerText);
-            }
-
-            XmlNodeList modeNode = document.GetElementsByTagName("Mode");
-            foreach (XmlNode node in modeNode)
-            {
-                mode = node.InnerText;
-            }
-
-            byte[] blockOfFile = { };
-            byte[] endFile = { };
-            byte[] decryptedBlock = { };
+            List<byte[]> decryptedFile = new List<byte[]>();
             CryptoService service = new CryptoService();
+
             deszyfrowanieProgressBar.Minimum = 1;
             deszyfrowanieProgressBar.Maximum = encryptedFile.Length;
-            deszyfrowanieProgressBar.Step = 2*sizeOfBlock;
-            while (decryptedByte < encryptedFile.Length)
+            deszyfrowanieProgressBar.Step = 2 * sizeOfBlock;
+
+            using (StreamReader stream = new StreamReader(plikDeszyfrowaniaTextBox.Text, Encoding.UTF8))
             {
-                blockOfFile = encryptedFile.Skip(decryptedByte).Take(2 * sizeOfBlock).ToArray<byte>();
-                decryptedByte += 2 * sizeOfBlock;
-                decryptedBlock = service.aesDecoding(sessionKey, trybSzyfrowaniaComboBox.Text, 128, blockOfFile, iv);
-                endFile = mergeArray(endFile, decryptedBlock);
-                deszyfrowanieProgressBar.PerformStep();
+                string line = "";
+                while((line = stream.ReadLine()) != null)
+                {
+                    
+                    if (line.Contains("<Name>"))
+                    {
+                        foreach(ListViewItem item in selectedItems)
+                        {
+                            if(item.Text == takeValueFromNode(line))
+                            {
+                                line = stream.ReadLine();
+                                sessionKey = Convert.FromBase64String(takeValueFromNode(line));
+                            }
+                        }                  
+                    }
+                    if (line.Contains("<Extension>"))
+                    {
+                        extension = takeValueFromNode(line);
+                    }
+                    if (line.Contains("<KeySize>"))
+                    {
+                        keySize = Convert.ToInt32(takeValueFromNode(line));
+                    }
+                    if (line.Contains("<IV>"))
+                    {
+                        iv = Convert.FromBase64String(takeValueFromNode(line));
+                    }
+                    if (line.Contains("<Mode>"))
+                    {
+                        mode = takeValueFromNode(line);
+                    }
+                    if (line.Contains("</EnFile"))
+                    {
+                        fileDecryptionBegin = false;
+                    }
+                    else
+                   if (line.Contains("EnFile"))
+                    {
+                        fileDecryptionBegin = true;
+                    }
+                    else
+                   if (fileDecryptionBegin)
+                    {
+                        blockOfFile = Convert.FromBase64String(line.Substring(0, line.Length));
+                        decryptedFile.Add(service.aesDecoding(sessionKey, trybSzyfrowaniaComboBox.Text, 128, blockOfFile, iv));
+                        deszyfrowanieProgressBar.PerformStep();
+                    }
+                }
+                
+
             }
+
+
+            /* XmlDocument document = new XmlDocument();
+             document.Load(plikDeszyfrowaniaTextBox.Text);
+             foreach (ListViewItem item in selectedItems)
+             {
+
+                 XmlNodeList exponentList = document.GetElementsByTagName("sessionKey");
+                 foreach(XmlNode node in exponentList)
+                 {
+                     if (node.PreviousSibling.FirstChild.Value == item.Text)
+                         sessionKey = Convert.FromBase64String(node.InnerText);
+                 }
+             }
+
+             XmlNodeList extensionNode = document.GetElementsByTagName("Extension");
+             foreach (XmlNode node in extensionNode)
+             {
+                 extension = node.InnerText;
+             }
+
+             XmlNodeList keySizeNode = document.GetElementsByTagName("KeySize");
+             foreach (XmlNode node in keySizeNode)
+             {
+                 keySize = Convert.ToInt32(node.InnerText);
+             }
+
+             XmlNodeList fileNode = document.GetElementsByTagName("File");
+             foreach (XmlNode node in fileNode)
+             {
+                 encryptedFile = Convert.FromBase64String(node.InnerText);
+             }
+
+             XmlNodeList ivNode = document.GetElementsByTagName("IV");
+             foreach (XmlNode node in ivNode)
+             {
+                 iv = Convert.FromBase64String(node.InnerText);
+             }
+
+             XmlNodeList modeNode = document.GetElementsByTagName("Mode");
+             foreach (XmlNode node in modeNode)
+             {
+                 mode = node.InnerText;
+             }*/
+
+            // byte[] blockOfFile = { };
+            /* byte[] endFile = { };
+             byte[] decryptedBlock = { };
+
+             while (decryptedByte < encryptedFile.Length)
+             {
+                 blockOfFile = encryptedFile.Skip(decryptedByte).Take(2 * sizeOfBlock).ToArray<byte>();
+                 decryptedByte += 2 * sizeOfBlock;
+                 decryptedBlock = service.aesDecoding(sessionKey, trybSzyfrowaniaComboBox.Text, 128, blockOfFile, iv);
+                 endFile = mergeArray(endFile, decryptedBlock);
+                 deszyfrowanieProgressBar.PerformStep();
+             }*/
 
             /*blockOfFile = encryptedFile.Skip(decryptedByte).Take(encryptedFile.Length- decryptedByte).ToArray<byte>();
             decryptedBlock = service.aesDecoding(sessionKey, trybSzyfrowaniaComboBox.Text, 128, blockOfFile,iv);
             endFile = mergeArray(endFile, decryptedBlock);*/
             //Console.WriteLine(ASCIIEncoding.ASCII.GetString(endFile));
-            File.WriteAllBytes(lokalizacjaDeszyfrowaniaTextBox.Text + "\\" + nazwaPlikuDeszyfrowanegoTextBox.Text + "." + extension,endFile);
+            using (FileStream stream = new FileStream(lokalizacjaDeszyfrowaniaTextBox.Text + "\\" + nazwaPlikuDeszyfrowanegoTextBox.Text + "." + extension,FileMode.Create))
+            {
+                foreach (byte[] line in decryptedFile)
+                    stream.Write(line, 0, line.Length);
+            }
+               // File.WriteAllBytes(lokalizacjaDeszyfrowaniaTextBox.Text + "\\" + nazwaPlikuDeszyfrowanegoTextBox.Text + "." + extension, );
 
         }
 

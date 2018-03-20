@@ -11,7 +11,7 @@ namespace BSKProject1
 {
     class CryptoService
     {
-        public string createSha1Hash(string message,int length)
+        public byte[] createSha512Hash(string message,int length)
         {
             
             byte[] encrypted;
@@ -30,18 +30,17 @@ namespace BSKProject1
             if (hash.Length > length)
                 hash = hash.Substring(0, length);
 
-            return hash;
+            return Convert.FromBase64String(hash);
         }
 
-        public string aesEncoding(string key, String mode, int blockSize, string message, byte[] iv)
+        public byte[] aesEncoding(byte[] key, String mode, int blockSize, byte[] message, byte[] iv)
         {
             byte[] encrypted;
 
             using (AesCryptoServiceProvider aes = new AesCryptoServiceProvider())
             {
-                byte[] a = ASCIIEncoding.ASCII.GetBytes(key);
-                aes.KeySize = a.Length*8;
-                aes.Key = ASCIIEncoding.ASCII.GetBytes(key);
+                aes.KeySize = key.Length*8;
+                aes.Key = key;
                 aes.BlockSize = blockSize;
                 aes.IV = iv;
 
@@ -56,20 +55,20 @@ namespace BSKProject1
                 }
                 aes.Padding = PaddingMode.PKCS7;
                 ICryptoTransform transform = aes.CreateEncryptor();
-                encrypted = transform.TransformFinalBlock(ASCIIEncoding.ASCII.GetBytes(message), 0, message.Length);
+                encrypted = transform.TransformFinalBlock(message, 0, message.Length);
             }
-            return Convert.ToBase64String(encrypted);
+            return encrypted;
         }
 
-        public string aesDecoding(string key, String mode, int blockSize, string message, byte[] iv)
+
+        public byte[] aesDecoding(byte[] key, String mode, int blockSize, byte[] message, byte[] iv)
         {
             byte[] decrypted;
 
             using (AesCryptoServiceProvider aes = new AesCryptoServiceProvider())
             {
-                byte[] byteKey = ASCIIEncoding.ASCII.GetBytes(key);
-                aes.KeySize = byteKey.Length * 8;
-                aes.Key = ASCIIEncoding.ASCII.GetBytes(key);
+                aes.KeySize = key.Length * 8;
+                aes.Key = key;
                 aes.BlockSize = blockSize;
                 aes.IV = iv;
                
@@ -84,11 +83,11 @@ namespace BSKProject1
                 }
                 aes.Padding = PaddingMode.PKCS7;
                 ICryptoTransform transform = aes.CreateDecryptor();
-                byte[] encryptedMessage = Convert.FromBase64String(message);
+                byte[] encryptedMessage = message;
                 decrypted = transform.TransformFinalBlock(encryptedMessage, 0, encryptedMessage.Length);
                 
             }
-            return ASCIIEncoding.ASCII.GetString(decrypted);
+            return decrypted;
         }
     }
 }

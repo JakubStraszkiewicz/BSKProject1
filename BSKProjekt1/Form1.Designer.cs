@@ -61,7 +61,7 @@
             this.hasloTextBox = new System.Windows.Forms.TextBox();
             this.label13 = new System.Windows.Forms.Label();
             this.label12 = new System.Windows.Forms.Label();
-            this.listView1 = new System.Windows.Forms.ListView();
+            this.deszyfratorListView = new System.Windows.Forms.ListView();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
             this.nazwaPlikuDeszyfrowanegoTextBox = new System.Windows.Forms.TextBox();
             this.label10 = new System.Windows.Forms.Label();
@@ -120,7 +120,7 @@
             this.splitContainer1.Panel2.Controls.Add(this.hasloTextBox);
             this.splitContainer1.Panel2.Controls.Add(this.label13);
             this.splitContainer1.Panel2.Controls.Add(this.label12);
-            this.splitContainer1.Panel2.Controls.Add(this.listView1);
+            this.splitContainer1.Panel2.Controls.Add(this.deszyfratorListView);
             this.splitContainer1.Panel2.Controls.Add(this.groupBox2);
             this.splitContainer1.Panel2.Controls.Add(this.wyborPlikuDeszyfrowaniaButton);
             this.splitContainer1.Panel2.Controls.Add(this.plikDeszyfrowaniaTextBox);
@@ -391,6 +391,7 @@
             this.deszyfrowanieButton.TabIndex = 15;
             this.deszyfrowanieButton.Text = "Deszyfruj";
             this.deszyfrowanieButton.UseVisualStyleBackColor = true;
+            this.deszyfrowanieButton.Click += new System.EventHandler(this.deszyfrowanieButton_Click);
             // 
             // deszyfrowanieProgressBar
             // 
@@ -435,13 +436,14 @@
             this.label12.TabIndex = 8;
             this.label12.Text = "Odbiorcy";
             // 
-            // listView1
+            // deszyfratorListView
             // 
-            this.listView1.Location = new System.Drawing.Point(3, 286);
-            this.listView1.Name = "listView1";
-            this.listView1.Size = new System.Drawing.Size(483, 149);
-            this.listView1.TabIndex = 7;
-            this.listView1.UseCompatibleStateImageBehavior = false;
+            this.deszyfratorListView.Location = new System.Drawing.Point(3, 286);
+            this.deszyfratorListView.MultiSelect = false;
+            this.deszyfratorListView.Name = "deszyfratorListView";
+            this.deszyfratorListView.Size = new System.Drawing.Size(483, 149);
+            this.deszyfratorListView.TabIndex = 7;
+            this.deszyfratorListView.UseCompatibleStateImageBehavior = false;
             // 
             // groupBox2
             // 
@@ -602,7 +604,7 @@
         private System.Windows.Forms.TextBox hasloTextBox;
         private System.Windows.Forms.Label label13;
         private System.Windows.Forms.Label label12;
-        private System.Windows.Forms.ListView listView1;
+        private System.Windows.Forms.ListView deszyfratorListView;
         private System.Windows.Forms.GroupBox groupBox2;
         private System.Windows.Forms.TextBox nazwaPlikuDeszyfrowanegoTextBox;
         private System.Windows.Forms.Label label10;

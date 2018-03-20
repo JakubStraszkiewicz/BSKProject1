@@ -19,12 +19,6 @@ namespace BSKProject1
     {
         private Form1 form;
 
-        private struct userKeys
-        {
-            public RSAParameters publicKey;
-            public RSAParameters privateKey;
-        }
-
         public AddUserForm(Form1 form)
         {
             InitializeComponent();
@@ -69,9 +63,9 @@ namespace BSKProject1
             }
         }
 
-        private userKeys generateKey()
+        private User generateKey()
         {
-            userKeys user;
+            User user = new User();
             using (var rsa = new RSACryptoServiceProvider(2048))
             {
                 rsa.PersistKeyInCsp = false;
@@ -81,7 +75,7 @@ namespace BSKProject1
             return user;
         }
 
-        private void savePublicKey(userKeys user)
+        private void savePublicKey(User user)
         {
             new XDocument(
                 new XElement("RSA",
@@ -101,7 +95,7 @@ namespace BSKProject1
 
         }
 
-        private void savePrivateKey(userKeys user)
+        private void savePrivateKey(User user)
         {
             new XDocument(
                 new XElement("RSA",
@@ -122,17 +116,16 @@ namespace BSKProject1
             String path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, nazwaUzytkownikaTextBox.Text + ".private");
             CryptoService service = new CryptoService();
             AesCryptoServiceProvider aes = new AesCryptoServiceProvider();
-            List<string> encryptedMessage = new List<string>();
 
-            string[] message = File.ReadAllLines(path);
+            byte[] message = File.ReadAllBytes(path);
+            byte[] encryptedMessage = { };
 
             aes.GenerateIV();
 
-            for (int j=0;j<message.Length;j++)
-                encryptedMessage.Add(service.aesEncoding(service.createSha1Hash(hasloUzytkownikaTextBox.Text,
-                                     lengthFromBitsToBytes(128)), "ECB", 128, message[j],aes.IV));
+            encryptedMessage = service.aesEncoding(service.createSha512Hash(hasloUzytkownikaTextBox.Text,
+                                 lengthFromBitsToBytes(128)), "ECB", 128, message ,aes.IV);
 
-            File.WriteAllLines(path, encryptedMessage.ToArray());
+            File.WriteAllBytes(path, encryptedMessage);
 
            
              // DECODING RSA!!!!!!!!!!!!!!!!!!!!!!!!1
@@ -153,7 +146,7 @@ namespace BSKProject1
 
         private void createUser(string name, String password)
         {
-            userKeys user = new userKeys();
+            User user = new User();
 
             user = generateKey();
             savePublicKey(user);

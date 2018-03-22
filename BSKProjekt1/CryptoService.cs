@@ -5,7 +5,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Org.BouncyCastle;
+using Crypto = Org.BouncyCastle.Crypto;
 
 namespace BSKProject1
 {
@@ -52,6 +52,12 @@ namespace BSKProject1
                     case "CBC":
                         aes.Mode = CipherMode.CBC;
                         break;
+                    case "CFB":
+                        aes.Mode = CipherMode.CFB;
+                        break;
+                    case "OFB":
+                        aes.Mode = CipherMode.OFB;
+                        break;
                 }
                 aes.Padding = PaddingMode.PKCS7;
                 ICryptoTransform transform = aes.CreateEncryptor();
@@ -79,6 +85,12 @@ namespace BSKProject1
                         break;
                     case "CBC":
                         aes.Mode = CipherMode.CBC;
+                        break;
+                    case "CFB":
+                        aes.Mode = CipherMode.CFB;
+                        break;
+                    case "OFB":
+                        aes.Mode = CipherMode.OFB;
                         break;
                 }
                 aes.Padding = PaddingMode.PKCS7;

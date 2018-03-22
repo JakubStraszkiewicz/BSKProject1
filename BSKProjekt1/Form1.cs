@@ -108,6 +108,9 @@ namespace BSKProjekt1
             OpenFileDialog fileDialog = new OpenFileDialog();
             fileDialog.ShowDialog();
             plikDeszyfrowaniaTextBox.Text = fileDialog.FileName;
+            if(plikDeszyfrowaniaTextBox.Text == "")
+                return;
+
             using (StreamReader stream = new StreamReader(plikDeszyfrowaniaTextBox.Text))
             {
                 string line = "";
@@ -171,13 +174,26 @@ namespace BSKProjekt1
             uzytkownicyListView.Items.AddRange(items.ToArray());
         }
 
-        private byte[] mergeArray(byte[] array1, byte[] array2)
+        private bool isEncodingPossible()
         {
-            int length = array1.Length + array2.Length;
-            byte[] sum = new byte[length];
-            array1.CopyTo(sum, 0);
-            array2.CopyTo(sum, array1.Length);
-            return sum;
+            if (plikSzyfrowaniaTextBox.Text == "")
+                MessageBox.Show("Nie wybrano pliku do zaszyfrowania",
+                   "Wybierz plik", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            else
+            if (lokalizacjaSzyfrowaniaTextBox.Text == "")
+                MessageBox.Show("Nie wybrano docelowej lokalizacji",
+                  "Wybierz lokalizacje", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            else
+            if (nazwaPlikuSzyfrowanegoTextBox.Text == "")
+                MessageBox.Show("Nie wprowadzono nowej nazwy dla pliku zaszyfrowanego",
+                  "Wpisz nazwe", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            else
+            if (odbiorcyListView.SelectedItems.Count == 0)
+                MessageBox.Show("Nie wybrano odbiorców wiadomosci",
+                 "Wybierz odbiorców", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            else
+                return true;
+            return false;
         }
 
         private void szyforwanieButton_Click(object sender, EventArgs e)
@@ -193,6 +209,8 @@ namespace BSKProjekt1
                 user.sessionKey = sessionKey;
                 users.Add(user);
             }
+            if (!isEncodingPossible())
+                return;
 
             CryptoService service = new CryptoService();
             AesCryptoServiceProvider aes = new AesCryptoServiceProvider();
@@ -238,7 +256,7 @@ namespace BSKProjekt1
            // Console.WriteLine(ASCIIEncoding.ASCII.GetString(endfile));
             try
             {
-                createEndFile(users, aes, plikSzyfrowaniaTextBox.Text.Split('.')[1], message);
+                createEndFile(users, aes, plikSzyfrowaniaTextBox.Text.Substring(plikSzyfrowaniaTextBox.Text.LastIndexOf('.') + 1), message);
             }
             catch (IndexOutOfRangeException ex)
             {
@@ -258,7 +276,6 @@ namespace BSKProjekt1
             writer.Indentation = 2;
 
             writer.WriteStartElement("EncryptedFileHeader");
-
             writeElement("Algorithm", "AES", writer);
             writeElement("KeySize", dlugoscKluczaComboBox.Text, writer);
             writeElement("BlockSize", "128", writer);
@@ -266,7 +283,6 @@ namespace BSKProjekt1
             writeElement("Mode", trybSzyfrowaniaComboBox.Text, writer);
             writeElement("IV", aes.IV, writer);
             writeElement("Extension", extension, writer);
-
             writer.WriteStartElement("ApprovedUsers");
 
             foreach (User singleUser in users)
@@ -287,7 +303,6 @@ namespace BSKProjekt1
             }
             writer.WriteEndElement();
             writer.WriteEndDocument();
-           
             writer.Close();
         }
 
@@ -297,37 +312,59 @@ namespace BSKProjekt1
             writer.WriteValue(value);
             writer.WriteEndElement();
         }
-        
-        private string takeValueFromNode(string node)
+
+        private bool isDecodingPossible()
         {
-            return node.Substring(node.IndexOf(">") + 1, node.LastIndexOf("<") - node.IndexOf(">") - 1);
+            if (plikDeszyfrowaniaTextBox.Text == "")
+                MessageBox.Show("Nie wybrano pliku do zdeszyfrowania",
+                   "Wybierz plik", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            else
+            if (lokalizacjaDeszyfrowaniaTextBox.Text == "")
+                MessageBox.Show("Nie wybrano docelowej lokalizacji",
+                  "Wybierz lokalizacje", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            else
+            if (nazwaPlikuDeszyfrowanegoTextBox.Text == "")
+                MessageBox.Show("Nie wprowadzono nowej nazwy dla pliku zdeszyfrowanego",
+                  "Wpisz nazwe", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            else
+            if (deszyfratorListView.SelectedItems.Count == 0)
+                MessageBox.Show("Nie wybrano użytkownika",
+                 "Wybierz użytkownika", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            else
+            if (hasloTextBox.Text == "")
+                MessageBox.Show("Nie wpisano hasła",
+                 "Wpisz hasło", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            else
+                return true;
+            return false;
         }
 
         private void deszyfrowanieButton_Click(object sender, EventArgs e)
         {
             ListView.SelectedListViewItemCollection selectedItems = deszyfratorListView.SelectedItems;
             int keySize;
-            int decryptedByte = 0;
-            byte[] sessionKey = { };
             byte[] iv = { };
-            byte[] encryptedFile = { };
+            byte[] sessionKey = { };
             byte[] blockOfFile = { };
+            byte[] encryptedFile = { };
             bool fileDecryptionBegin = false;
-            string extension = "";
             string mode = "";
+            string extension = "";
+
+            if (!isDecodingPossible())
+                return;
+
             List<byte[]> decryptedFile = new List<byte[]>();
             CryptoService service = new CryptoService();
 
             deszyfrowanieProgressBar.Minimum = 1;
-            deszyfrowanieProgressBar.Maximum = encryptedFile.Length;
-            deszyfrowanieProgressBar.Step = 2 * sizeOfBlock;
+            deszyfrowanieProgressBar.Maximum = (int)(new FileInfo(plikDeszyfrowaniaTextBox.Text)).Length;
 
             using (StreamReader stream = new StreamReader(plikDeszyfrowaniaTextBox.Text, Encoding.UTF8))
             {
                 string line = "";
                 while((line = stream.ReadLine()) != null)
                 {
-                    
                     if (line.Contains("<Name>"))
                     {
                         foreach(ListViewItem item in selectedItems)
@@ -369,81 +406,23 @@ namespace BSKProjekt1
                     {
                         blockOfFile = Convert.FromBase64String(line.Substring(0, line.Length));
                         decryptedFile.Add(service.aesDecoding(sessionKey, trybSzyfrowaniaComboBox.Text, 128, blockOfFile, iv));
+                        deszyfrowanieProgressBar.Step = line.Length;
                         deszyfrowanieProgressBar.PerformStep();
                     }
-                }
-                
-
+                }                
             }
 
-
-            /* XmlDocument document = new XmlDocument();
-             document.Load(plikDeszyfrowaniaTextBox.Text);
-             foreach (ListViewItem item in selectedItems)
-             {
-
-                 XmlNodeList exponentList = document.GetElementsByTagName("sessionKey");
-                 foreach(XmlNode node in exponentList)
-                 {
-                     if (node.PreviousSibling.FirstChild.Value == item.Text)
-                         sessionKey = Convert.FromBase64String(node.InnerText);
-                 }
-             }
-
-             XmlNodeList extensionNode = document.GetElementsByTagName("Extension");
-             foreach (XmlNode node in extensionNode)
-             {
-                 extension = node.InnerText;
-             }
-
-             XmlNodeList keySizeNode = document.GetElementsByTagName("KeySize");
-             foreach (XmlNode node in keySizeNode)
-             {
-                 keySize = Convert.ToInt32(node.InnerText);
-             }
-
-             XmlNodeList fileNode = document.GetElementsByTagName("File");
-             foreach (XmlNode node in fileNode)
-             {
-                 encryptedFile = Convert.FromBase64String(node.InnerText);
-             }
-
-             XmlNodeList ivNode = document.GetElementsByTagName("IV");
-             foreach (XmlNode node in ivNode)
-             {
-                 iv = Convert.FromBase64String(node.InnerText);
-             }
-
-             XmlNodeList modeNode = document.GetElementsByTagName("Mode");
-             foreach (XmlNode node in modeNode)
-             {
-                 mode = node.InnerText;
-             }*/
-
-            // byte[] blockOfFile = { };
-            /* byte[] endFile = { };
-             byte[] decryptedBlock = { };
-
-             while (decryptedByte < encryptedFile.Length)
-             {
-                 blockOfFile = encryptedFile.Skip(decryptedByte).Take(2 * sizeOfBlock).ToArray<byte>();
-                 decryptedByte += 2 * sizeOfBlock;
-                 decryptedBlock = service.aesDecoding(sessionKey, trybSzyfrowaniaComboBox.Text, 128, blockOfFile, iv);
-                 endFile = mergeArray(endFile, decryptedBlock);
-                 deszyfrowanieProgressBar.PerformStep();
-             }*/
-
-            /*blockOfFile = encryptedFile.Skip(decryptedByte).Take(encryptedFile.Length- decryptedByte).ToArray<byte>();
-            decryptedBlock = service.aesDecoding(sessionKey, trybSzyfrowaniaComboBox.Text, 128, blockOfFile,iv);
-            endFile = mergeArray(endFile, decryptedBlock);*/
-            //Console.WriteLine(ASCIIEncoding.ASCII.GetString(endFile));
             using (FileStream stream = new FileStream(lokalizacjaDeszyfrowaniaTextBox.Text + "\\" + nazwaPlikuDeszyfrowanegoTextBox.Text + "." + extension,FileMode.Create))
             {
                 foreach (byte[] line in decryptedFile)
                     stream.Write(line, 0, line.Length);
             }
-               // File.WriteAllBytes(lokalizacjaDeszyfrowaniaTextBox.Text + "\\" + nazwaPlikuDeszyfrowanegoTextBox.Text + "." + extension, );
 
+        }
+
+        private string takeValueFromNode(string node)
+        {
+            return node.Substring(node.IndexOf(">") + 1, node.LastIndexOf("<") - node.IndexOf(">") - 1);
         }
 
         /* private void loadPublicKey(string userName)

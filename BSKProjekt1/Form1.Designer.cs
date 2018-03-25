@@ -588,7 +588,7 @@
         private System.Windows.Forms.Button lokalizacjaSzyfrowaniaButton;
         private System.Windows.Forms.TextBox lokalizacjaSzyfrowaniaTextBox;
         private System.Windows.Forms.Label label3;
-        private System.Windows.Forms.ComboBox dlugoscKluczaComboBox;
+        public System.Windows.Forms.ComboBox dlugoscKluczaComboBox;
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.ComboBox dlugoscPodblokuComboBox;

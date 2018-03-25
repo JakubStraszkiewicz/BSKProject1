@@ -12,12 +12,15 @@ using System.Security.Cryptography;
 using System.Xml.Linq;
 using System.IO;
 using BSKProjekt1;
+using System.Xml;
 
 namespace BSKProject1
 {
     public partial class AddUserForm : Form
     {
         private Form1 form;
+        private string privateKeyPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory , "private");
+        private string publicKeyPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "public");
 
         public AddUserForm(Form1 form)
         {
@@ -63,9 +66,8 @@ namespace BSKProject1
             }
         }
 
-        private User generateKey()
+        private User generateKey(User user)
         {
-            User user = new User();
             using (var rsa = new RSACryptoServiceProvider(2048))
             {
                 rsa.PersistKeyInCsp = false;
@@ -77,66 +79,87 @@ namespace BSKProject1
 
         private void savePublicKey(User user)
         {
-            new XDocument(
-                new XElement("RSA",
-                    new XElement("userName", nazwaUzytkownikaTextBox.Text),
-                    new XElement("publicKey",
-                        new XElement("D", user.publicKey.D),
-                        new XElement("DP", user.publicKey.DP),
-                        new XElement("DQ", user.publicKey.DQ),
-                        new XElement("Exponent", user.publicKey.Exponent),
-                        new XElement("InverseQ", user.publicKey.InverseQ),
-                        new XElement("Modulus", user.publicKey.Modulus),
-                        new XElement("P", user.publicKey.P),
-                        new XElement("Q", user.publicKey.Q))
-                )
-            )
-            .Save(nazwaUzytkownikaTextBox.Text + ".public");
+            XmlTextWriter writer = new XmlTextWriter(Path.Combine(publicKeyPath, user.name + ".public"), Encoding.ASCII);
+            writer.WriteStartDocument(true);
+            writer.Formatting = Formatting.Indented;
+            writer.Indentation = 2;
+
+            writer.WriteStartElement("RSA");
+            form.writeElement("D", user.publicKey.D, writer);
+            form.writeElement("DP", user.publicKey.DP, writer);
+            form.writeElement("DQ", user.publicKey.DQ, writer);
+            form.writeElement("Exponent", user.publicKey.Exponent, writer);
+            form.writeElement("InverseQ", user.publicKey.InverseQ, writer);
+            form.writeElement("Modulus", user.publicKey.Modulus, writer);
+            form.writeElement("P", user.publicKey.P, writer);
+            form.writeElement("Q", user.publicKey.Q, writer);
+            writer.WriteEndElement();
+            writer.Close();
 
         }
 
         private void savePrivateKey(User user)
         {
-            new XDocument(
-                new XElement("RSA",
-                    new XElement("userName", nazwaUzytkownikaTextBox.Text),
-                    new XElement("publicKey",
-                        new XElement("D", user.privateKey.D),
-                        new XElement("DP", user.privateKey.DP),
-                        new XElement("DQ", user.privateKey.DQ),
-                        new XElement("Exponent", user.privateKey.Exponent),
-                        new XElement("InverseQ", user.privateKey.InverseQ),
-                        new XElement("Modulus", user.privateKey.Modulus),
-                        new XElement("P", user.privateKey.P),
-                        new XElement("Q", user.privateKey.Q))
-                )
-            )
-            .Save(nazwaUzytkownikaTextBox.Text + ".private");
+            XmlTextWriter writer = new XmlTextWriter(Path.Combine(privateKeyPath, user.name + ".private"), Encoding.ASCII);
+            writer.WriteStartDocument(true);
+            writer.Formatting = Formatting.Indented;
+            writer.Indentation = 2;
 
-            String path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, nazwaUzytkownikaTextBox.Text + ".private");
+            writer.WriteStartElement("RSA");
+            form.writeElement("D", user.privateKey.D, writer);
+            form.writeElement("DP", user.privateKey.DP, writer);
+            form.writeElement("DQ", user.privateKey.DQ, writer);
+            form.writeElement("Exponent", user.privateKey.Exponent, writer);
+            form.writeElement("InverseQ", user.privateKey.InverseQ, writer);
+            form.writeElement("Modulus", user.privateKey.Modulus, writer);
+            form.writeElement("P", user.privateKey.P, writer);
+            form.writeElement("Q", user.privateKey.Q, writer);
+            writer.WriteEndElement();
+            writer.Close();
+
+            String path = Path.Combine(privateKeyPath, nazwaUzytkownikaTextBox.Text + ".private");
             CryptoService service = new CryptoService();
             AesCryptoServiceProvider aes = new AesCryptoServiceProvider();
 
-            byte[] message = File.ReadAllBytes(path);
+            byte[] file = File.ReadAllBytes(path);
+            List<byte[]> message = new List<byte[]>();
             byte[] encryptedMessage = { };
-
+            byte[] blockOfFile = { };
+            int readedByte = 0;
+            int sizeOfBlock = 256;
             aes.GenerateIV();
 
-            encryptedMessage = service.aesEncoding(service.createSha512Hash(hasloUzytkownikaTextBox.Text,
-                                 lengthFromBitsToBytes(128)), "ECB", 128, message ,aes.IV);
-
-            File.WriteAllBytes(path, encryptedMessage);
-
-           
-             // DECODING RSA!!!!!!!!!!!!!!!!!!!!!!!!1
-          /*  using (System.IO.StreamReader fileReader = new System.IO.StreamReader(path + "1"))
+            while (readedByte < file.Length - sizeOfBlock)
             {
-                while ((line = fileReader.ReadLine()) != null)
-                {
-                    encrypted = service.aesDecoding(service.createSha1Hash("haslo123", lengthFromBitsToBytes(128)), "ECB", 128, line);
-                    Console.WriteLine(encrypted);
-                }
-            }*/
+                blockOfFile = file.Skip(readedByte).Take(sizeOfBlock).ToArray<byte>();
+                readedByte += sizeOfBlock;
+                message.Add(service.aesEncoding(service.createSha512Hash(hasloUzytkownikaTextBox.Text, 16), "ECB", 128, blockOfFile, aes.IV));
+            }
+
+            blockOfFile = file.Skip(readedByte).Take(file.Length - readedByte).ToArray<byte>();
+            message.Add(service.aesEncoding(service.createSha512Hash(hasloUzytkownikaTextBox.Text, 16), "ECB", 128, blockOfFile, aes.IV));
+
+            XmlTextWriter writer2 = new XmlTextWriter(path + "1", Encoding.UTF8);
+            foreach (byte[] block in message)
+            {
+                writer2.WriteBase64(block, 0, block.Length);
+                writer2.WriteWhitespace("\n");
+            }
+            writer2.Close();
+            // encryptedMessage = service.aesEncoding(service.createSha512Hash(hasloUzytkownikaTextBox.Text, 16), "ECB", 128, message ,aes.IV);
+
+            //File.WriteAllBytes(path, encryptedMessage);
+
+
+            // DECODING RSA!!!!!!!!!!!!!!!!!!!!!!!!1
+            /*  using (System.IO.StreamReader fileReader = new System.IO.StreamReader(path + "1"))
+              {
+                  while ((line = fileReader.ReadLine()) != null)
+                  {
+                      encrypted = service.aesDecoding(service.createSha1Hash("haslo123", lengthFromBitsToBytes(128)), "ECB", 128, line);
+                      Console.WriteLine(encrypted);
+                  }
+              }*/
         }
 
         private int lengthFromBitsToBytes(int lengthInBits)
@@ -147,8 +170,8 @@ namespace BSKProject1
         private void createUser(string name, String password)
         {
             User user = new User();
-
-            user = generateKey();
+            user.name = name;
+            user = generateKey(user);
             savePublicKey(user);
             savePrivateKey(user);
            

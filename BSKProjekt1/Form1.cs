@@ -17,8 +17,8 @@ namespace BSKProjekt1
 {
     public partial class Form1 : Form
     {
-
-        private static string workSpace = AppDomain.CurrentDomain.BaseDirectory;
+        private string privateKeyPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "private");
+        private string publicKeyPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "public");
         private List<User> users = new List<User>();
         private static int sizeOfBlock = 1000000;
 
@@ -32,6 +32,12 @@ namespace BSKProjekt1
             uzytkownicyListView.View = View.List;
             deszyfratorListView.View = View.List;
             odbiorcyListView.View = View.List;
+            DirectoryInfo privateKeyTargetDirectory = new DirectoryInfo(privateKeyPath);
+            DirectoryInfo publicKeyTargetDirectory = new DirectoryInfo(publicKeyPath);
+            if (!privateKeyTargetDirectory.Exists)
+                privateKeyTargetDirectory.Create();
+            if (!publicKeyTargetDirectory.Exists)
+                publicKeyTargetDirectory.Create();
             uzytkownicylistViewUpdate();
         }
 
@@ -45,7 +51,7 @@ namespace BSKProjekt1
         {
 
             uzytkownicyListView.Items.Clear();
-            DirectoryInfo directory = new DirectoryInfo(workSpace);
+            DirectoryInfo directory = new DirectoryInfo(publicKeyPath);
             List<ListViewItem> items = new List<ListViewItem>();
             FileInfo[] files = directory.GetFiles();
             for (int i = 0; i < files.Length; i++)
@@ -209,6 +215,19 @@ namespace BSKProjekt1
                 user.sessionKey = sessionKey;
                 users.Add(user);
             }
+
+           /* using (var rsa = new RSACryptoServiceProvider(2048))
+            {
+                rsa.PersistKeyInCsp = false;
+                RSAParameters privateKey = rsa.ExportParameters(true);
+                RSAParameters publicKey = rsa.ExportParameters(false);
+                byte[] rsaEncoding = service.rsaEncoding(ASCIIEncoding.ASCII.GetBytes("wiadomosc"), publicKey);
+                byte[] rsaDecoding = service.rsaDecoding(rsaEncoding, privateKey);
+                Console.WriteLine(ASCIIEncoding.ASCII.GetString(rsaDecoding));
+            }*/
+            
+
+            // loadRsaKey(users[0].name,false);
             if (!isEncodingPossible())
                 return;
 
@@ -271,6 +290,8 @@ namespace BSKProjekt1
         {
             XmlTextWriter writer = new XmlTextWriter(lokalizacjaSzyfrowaniaTextBox.Text + "\\" + 
                                         nazwaPlikuSzyfrowanegoTextBox.Text + ".xml", Encoding.UTF8);
+            CryptoService service = new CryptoService();
+
             writer.WriteStartDocument(true);
             writer.Formatting = Formatting.Indented;
             writer.Indentation = 2;
@@ -287,6 +308,8 @@ namespace BSKProjekt1
 
             foreach (User singleUser in users)
             {
+                singleUser.publicKey = loadPublicKey(singleUser.name);
+                singleUser.sessionKey = service.rsaEncoding(singleUser.sessionKey, singleUser.publicKey);
                 writer.WriteStartElement("User");
                 writeElement("Name", singleUser.name, writer);
                 writeElement("sessionKey", singleUser.sessionKey, writer);
@@ -306,10 +329,11 @@ namespace BSKProjekt1
             writer.Close();
         }
 
-        private void writeElement(string element, object value, XmlTextWriter writer)
+        public void writeElement(string element, object value, XmlTextWriter writer)
         {
             writer.WriteStartElement(element);
-            writer.WriteValue(value);
+            if(value != null)
+                writer.WriteValue(value);
             writer.WriteEndElement();
         }
 
@@ -342,7 +366,7 @@ namespace BSKProjekt1
         private void deszyfrowanieButton_Click(object sender, EventArgs e)
         {
             ListView.SelectedListViewItemCollection selectedItems = deszyfratorListView.SelectedItems;
-            int keySize;
+            int keySize = 0;
             byte[] iv = { };
             byte[] sessionKey = { };
             byte[] blockOfFile = { };
@@ -356,6 +380,7 @@ namespace BSKProjekt1
 
             List<byte[]> decryptedFile = new List<byte[]>();
             CryptoService service = new CryptoService();
+            RSAParameters privatekey = new RSAParameters();
 
             deszyfrowanieProgressBar.Minimum = 1;
             deszyfrowanieProgressBar.Maximum = (int)(new FileInfo(plikDeszyfrowaniaTextBox.Text)).Length;
@@ -373,6 +398,16 @@ namespace BSKProjekt1
                             {
                                 line = stream.ReadLine();
                                 sessionKey = Convert.FromBase64String(takeValueFromNode(line));
+                                try
+                                {
+                                    byte[] hash = service.createSha512Hash(hasloTextBox.Text, 16);
+                                    privatekey = loadPrivateKey(hash, item.Text);
+                                    sessionKey = service.rsaDecoding(sessionKey, privatekey);
+                                }
+                                catch (System.Security.Cryptography.CryptographicException)
+                                {
+                                    return;
+                                }
                             }
                         }                  
                     }
@@ -405,8 +440,8 @@ namespace BSKProjekt1
                    if (fileDecryptionBegin)
                     {
                         blockOfFile = Convert.FromBase64String(line.Substring(0, line.Length));
-                        decryptedFile.Add(service.aesDecoding(sessionKey, trybSzyfrowaniaComboBox.Text, 128, blockOfFile, iv));
-                        deszyfrowanieProgressBar.Step = line.Length;
+                        decryptedFile.Add(service.aesDecoding(sessionKey, mode , 128, blockOfFile, iv));
+                        deszyfrowanieProgressBar.Step = ASCIIEncoding.Unicode.GetByteCount(line);
                         deszyfrowanieProgressBar.PerformStep();
                     }
                 }                
@@ -425,15 +460,105 @@ namespace BSKProjekt1
             return node.Substring(node.IndexOf(">") + 1, node.LastIndexOf("<") - node.IndexOf(">") - 1);
         }
 
-        /* private void loadPublicKey(string userName)
+        private RSAParameters loadPrivateKey(byte[] password,string userName)
+        {
+            string line = "";
+            string stringKey = "";
+            byte[] encrypted = { };
+            RSAParameters key = new RSAParameters();
+            byte[] blockOfFile = { };
+            CryptoService service = new CryptoService();
+            AesCryptoServiceProvider aes = new AesCryptoServiceProvider();
+            aes.GenerateIV();
+            using (System.IO.StreamReader fileReader = new System.IO.StreamReader(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "private", userName + ".private1"), Encoding.UTF8))
+            {
+                while ((line = fileReader.ReadLine()) != null)
+                {
+                    blockOfFile = Convert.FromBase64String(line.Substring(0, line.Length));
+                    encrypted = (service.aesDecoding(password, "ECB", 128, blockOfFile, aes.IV));
+                    stringKey += ASCIIEncoding.ASCII.GetString(encrypted);
+                }
+                if (stringKey.Contains("<D>"))
+                {
+                    key.D = Convert.FromBase64String(stringKey.Substring(stringKey.IndexOf("<D>") + 3, stringKey.IndexOf("</D>") - stringKey.IndexOf("<D>") - 3));
+                }
+                if (stringKey.Contains("<DP>"))
+                {
+                    key.DP = Convert.FromBase64String(stringKey.Substring(stringKey.IndexOf("<DP>") + 4, stringKey.IndexOf("</DP>") - stringKey.IndexOf("<DP>") - 4));
+                }
+                if (stringKey.Contains("<DQ>"))
+                {
+                    key.DQ = Convert.FromBase64String(stringKey.Substring(stringKey.IndexOf("<DQ>") + 4, stringKey.IndexOf("</DQ>") - stringKey.IndexOf("<DQ>") - 4));
+                }
+                if (stringKey.Contains("<Exponent>"))
+                {
+                    key.Exponent = Convert.FromBase64String(stringKey.Substring(stringKey.IndexOf("<Exponent>") + 10, stringKey.IndexOf("</Exponent>") - stringKey.IndexOf("<Exponent>") - 10));
+                }
+                if (stringKey.Contains("<InverseQ>"))
+                {
+                    key.InverseQ = Convert.FromBase64String(stringKey.Substring(stringKey.IndexOf("<InverseQ>") + 10, stringKey.IndexOf("</InverseQ>") - stringKey.IndexOf("<InverseQ>") - 10));
+                }
+                if (stringKey.Contains("<Modulus>"))
+                {
+                    key.Modulus = Convert.FromBase64String(stringKey.Substring(stringKey.IndexOf("<Modulus>") + 9, stringKey.IndexOf("</Modulus>") - stringKey.IndexOf("<Modulus>") - 9));
+                }
+                if (stringKey.Contains("<P>"))
+                {
+                    key.P = Convert.FromBase64String(stringKey.Substring(stringKey.IndexOf("<P>") + 3, stringKey.IndexOf("</P>") - stringKey.IndexOf("<P>") - 3));
+                }
+                if (stringKey.Contains("<Q>"))
+                {
+                    key.Q = Convert.FromBase64String(stringKey.Substring(stringKey.IndexOf("<Q>") + 3, stringKey.IndexOf("</Q>") - stringKey.IndexOf("<Q>") - 3));
+                }
+            }
+            return key;
+        }
+
+        private RSAParameters loadPublicKey(string userName)
          {
-             XmlDocument document = new XmlDocument();
-             document.Load(userName + ".public");
-             XmlNodeList exponentList = document.GetElementsByTagName("Exponent");
-             foreach(XmlNode node in exponentList)
-             {
-                 Convert.ToByte(node.LastChild.Value);
-             }
-         }*/
+            string fileWithKey = userName +".public"; ;
+            string line;
+            RSAParameters key = new RSAParameters();
+
+            using (StreamReader stream = new StreamReader(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "public", fileWithKey)))
+            {
+                while(!(line = stream.ReadLine()).Contains("/RSA"))
+                {
+                    if(line.Contains("<D>"))
+                    {
+                        key.D = Convert.FromBase64String(takeValueFromNode(line));
+                    }
+                    if (line.Contains("<DP>"))
+                    {
+                        key.DP = Convert.FromBase64String(takeValueFromNode(line));
+                    }
+                    if (line.Contains("<DQ>"))
+                    {
+                        key.DQ = Convert.FromBase64String(takeValueFromNode(line));
+                    }
+                    if (line.Contains("<Exponent>"))
+                    {
+                        key.Exponent = Convert.FromBase64String(takeValueFromNode(line));
+                    }
+                    if (line.Contains("<InverseQ>"))
+                    {
+                        key.InverseQ = Convert.FromBase64String(takeValueFromNode(line));
+                    }
+                    if (line.Contains("<Modulus>"))
+                    {
+                        key.Modulus = Convert.FromBase64String(takeValueFromNode(line));
+                    }
+                    if (line.Contains("<P>"))
+                    {
+                        key.P = Convert.FromBase64String(takeValueFromNode(line));
+                    }
+                    if (line.Contains("<Q>"))
+                    {
+                        key.Q = Convert.FromBase64String(takeValueFromNode(line));
+                    }
+                }
+            }
+            return key;
+        }
     }
 }

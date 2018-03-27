@@ -139,27 +139,13 @@ namespace BSKProject1
             blockOfFile = file.Skip(readedByte).Take(file.Length - readedByte).ToArray<byte>();
             message.Add(service.aesEncoding(service.createSha512Hash(hasloUzytkownikaTextBox.Text, 16), "ECB", 128, blockOfFile, aes.IV));
 
-            XmlTextWriter writer2 = new XmlTextWriter(path + "1", Encoding.UTF8);
+            XmlTextWriter writer2 = new XmlTextWriter(path, Encoding.UTF8);
             foreach (byte[] block in message)
             {
                 writer2.WriteBase64(block, 0, block.Length);
                 writer2.WriteWhitespace("\n");
             }
             writer2.Close();
-            // encryptedMessage = service.aesEncoding(service.createSha512Hash(hasloUzytkownikaTextBox.Text, 16), "ECB", 128, message ,aes.IV);
-
-            //File.WriteAllBytes(path, encryptedMessage);
-
-
-            // DECODING RSA!!!!!!!!!!!!!!!!!!!!!!!!1
-            /*  using (System.IO.StreamReader fileReader = new System.IO.StreamReader(path + "1"))
-              {
-                  while ((line = fileReader.ReadLine()) != null)
-                  {
-                      encrypted = service.aesDecoding(service.createSha1Hash("haslo123", lengthFromBitsToBytes(128)), "ECB", 128, line);
-                      Console.WriteLine(encrypted);
-                  }
-              }*/
         }
 
         private int lengthFromBitsToBytes(int lengthInBits)
@@ -174,14 +160,6 @@ namespace BSKProject1
             user = generateKey(user);
             savePublicKey(user);
             savePrivateKey(user);
-           
-            /* String abc = "to tekst jawny";
-             byte[] encrypted = encrypt(abc, user);
-             MessageBox.Show(abc+" "+encrypted,
-                    "Błędne hasło", MessageBoxButtons.OK, MessageBoxIcon.Error);
-             string decrypted = decrypt(encrypted, user);
-             MessageBox.Show(abc + " " + decrypted,
-                    "Błędne hasło", MessageBoxButtons.OK, MessageBoxIcon.Error);*/
         }
     }
 }

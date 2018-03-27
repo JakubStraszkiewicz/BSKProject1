@@ -120,14 +120,23 @@ namespace BSKProjekt1
             using (StreamReader stream = new StreamReader(plikDeszyfrowaniaTextBox.Text))
             {
                 string line = "";
-                do
+                try
                 {
-                    line = stream.ReadLine();
-                    if(line.Contains("Name"))
+                    do
                     {
-                        deszyfratorListView.Items.Add(line.Substring(line.IndexOf(">") + 1,line.LastIndexOf("<") - line.IndexOf(">") - 1));
-                    }
-                } while (!line.Contains("</ApprovedUsers>"));
+                        line = stream.ReadLine();
+                        if(line.Contains("<Name>"))
+                        {
+                            deszyfratorListView.Items.Add(line.Substring(line.IndexOf(">") + 1,line.LastIndexOf("<") - line.IndexOf(">") - 1));
+                        }
+                    } while (!line.Contains("</ApprovedUsers>"));
+                }
+                catch (Exception ex)
+                {
+                    plikDeszyfrowaniaTextBox.Text = "";
+                    MessageBox.Show("To nie jest prawidłowo zaszyfrowany plik",
+                  "Zły plik", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
         }
 
@@ -216,18 +225,6 @@ namespace BSKProjekt1
                 users.Add(user);
             }
 
-           /* using (var rsa = new RSACryptoServiceProvider(2048))
-            {
-                rsa.PersistKeyInCsp = false;
-                RSAParameters privateKey = rsa.ExportParameters(true);
-                RSAParameters publicKey = rsa.ExportParameters(false);
-                byte[] rsaEncoding = service.rsaEncoding(ASCIIEncoding.ASCII.GetBytes("wiadomosc"), publicKey);
-                byte[] rsaDecoding = service.rsaDecoding(rsaEncoding, privateKey);
-                Console.WriteLine(ASCIIEncoding.ASCII.GetString(rsaDecoding));
-            }*/
-            
-
-            // loadRsaKey(users[0].name,false);
             if (!isEncodingPossible())
                 return;
 
@@ -240,8 +237,10 @@ namespace BSKProjekt1
             int readedByte = 0;
             byte[] file = File.ReadAllBytes(plikSzyfrowaniaTextBox.Text);
             szyfrowanieProgressBar.Minimum = 1;
+            szyfrowanieProgressBar.Value = 1;
             szyfrowanieProgressBar.Maximum = file.Length;
             szyfrowanieProgressBar.Step = sizeOfBlock;
+
             while(readedByte < file.Length- sizeOfBlock)
             {
                 blockOfFile = file.Skip(readedByte).Take(sizeOfBlock).ToArray<byte>();
@@ -253,26 +252,7 @@ namespace BSKProjekt1
             blockOfFile = file.Skip(readedByte).Take(file.Length-readedByte).ToArray<byte>();
             message.Add(service.aesEncoding(sessionKey, trybSzyfrowaniaComboBox.Text, 128, blockOfFile, aes.IV));
             szyfrowanieProgressBar.PerformStep();
-            
-          /*  byte[] message1 = ASCIIEncoding.ASCII.GetBytes("wiadomosc oby dz");
-            byte[] message2 = ASCIIEncoding.ASCII.GetBytes("ialalo");
-            byte[] encoding = service.aesEncoding(sessionKey, "ECB", 128, message1,aes.IV);
-            byte[] encoding2 = service.aesEncoding(sessionKey, "ECB", 128, message2, aes.IV);
-            encoding = mergeArray(encoding, encoding2);
-            int encodingbyte = 0;
-            byte[] blockOfFile1 = { };
-            byte[] decryptedBlock = { };
-            byte[] endfile = { };
-            while(encodingbyte < encoding.Length)
-            {
-                blockOfFile1 = encoding.Skip(encodingbyte).Take(32).ToArray<byte>();
-                encodingbyte += 32;
-                decryptedBlock = service.aesDecoding(sessionKey, trybSzyfrowaniaComboBox.Text, 128, blockOfFile1, aes.IV);
-                endfile = mergeArray(endfile, decryptedBlock);
 
-            }*/
-            //byte[] decoding = service.aesDecoding(sessionKey, "ECB", 128, encoding,aes.IV);
-           // Console.WriteLine(ASCIIEncoding.ASCII.GetString(endfile));
             try
             {
                 createEndFile(users, aes, plikSzyfrowaniaTextBox.Text.Substring(plikSzyfrowaniaTextBox.Text.LastIndexOf('.') + 1), message);
@@ -281,9 +261,7 @@ namespace BSKProjekt1
             {
                 MessageBox.Show("Nie wybrano pliku do zaszyfrowania",
                     "Brak pliku", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-
-            
+            }        
         }
 
         private void createEndFile(List<User> users, AesCryptoServiceProvider aes, string extension,List<byte[]> message)
@@ -383,6 +361,7 @@ namespace BSKProjekt1
             RSAParameters privatekey = new RSAParameters();
 
             deszyfrowanieProgressBar.Minimum = 1;
+            deszyfrowanieProgressBar.Value = 1;
             deszyfrowanieProgressBar.Maximum = (int)(new FileInfo(plikDeszyfrowaniaTextBox.Text)).Length;
 
             using (StreamReader stream = new StreamReader(plikDeszyfrowaniaTextBox.Text, Encoding.UTF8))
@@ -394,10 +373,10 @@ namespace BSKProjekt1
                     {
                         foreach(ListViewItem item in selectedItems)
                         {
-                            if(item.Text == takeValueFromNode(line))
+                            if(item.Text == takeValueFromNode(line,"<Name>"))
                             {
                                 line = stream.ReadLine();
-                                sessionKey = Convert.FromBase64String(takeValueFromNode(line));
+                                sessionKey = Convert.FromBase64String(takeValueFromNode(line, "<sessionKey>"));
                                 try
                                 {
                                     byte[] hash = service.createSha512Hash(hasloTextBox.Text, 16);
@@ -406,6 +385,8 @@ namespace BSKProjekt1
                                 }
                                 catch (System.Security.Cryptography.CryptographicException)
                                 {
+                                    deszyfrowanieProgressBar.Step = (int)(new FileInfo(plikDeszyfrowaniaTextBox.Text)).Length;
+                                    deszyfrowanieProgressBar.PerformStep();
                                     return;
                                 }
                             }
@@ -413,19 +394,19 @@ namespace BSKProjekt1
                     }
                     if (line.Contains("<Extension>"))
                     {
-                        extension = takeValueFromNode(line);
+                        extension = takeValueFromNode(line,"<Extension>");
                     }
                     if (line.Contains("<KeySize>"))
                     {
-                        keySize = Convert.ToInt32(takeValueFromNode(line));
+                        keySize = Convert.ToInt32(takeValueFromNode(line,"<KeySize>"));
                     }
                     if (line.Contains("<IV>"))
                     {
-                        iv = Convert.FromBase64String(takeValueFromNode(line));
+                        iv = Convert.FromBase64String(takeValueFromNode(line,"<IV>"));
                     }
                     if (line.Contains("<Mode>"))
                     {
-                        mode = takeValueFromNode(line);
+                        mode = takeValueFromNode(line,"<Mode>");
                     }
                     if (line.Contains("</EnFile"))
                     {
@@ -452,12 +433,11 @@ namespace BSKProjekt1
                 foreach (byte[] line in decryptedFile)
                     stream.Write(line, 0, line.Length);
             }
-
         }
 
-        private string takeValueFromNode(string node)
-        {
-            return node.Substring(node.IndexOf(">") + 1, node.LastIndexOf("<") - node.IndexOf(">") - 1);
+        private string takeValueFromNode(string node,string header)
+        {            
+            return node.Substring(node.IndexOf(header) + header.Length, node.LastIndexOf(header.Insert(1,"/")) - node.IndexOf(header) - header.Length);
         }
 
         private RSAParameters loadPrivateKey(byte[] password,string userName)
@@ -470,7 +450,7 @@ namespace BSKProjekt1
             CryptoService service = new CryptoService();
             AesCryptoServiceProvider aes = new AesCryptoServiceProvider();
             aes.GenerateIV();
-            using (System.IO.StreamReader fileReader = new System.IO.StreamReader(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "private", userName + ".private1"), Encoding.UTF8))
+            using (System.IO.StreamReader fileReader = new System.IO.StreamReader(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "private", userName + ".private"), Encoding.UTF8))
             {
                 while ((line = fileReader.ReadLine()) != null)
                 {
@@ -480,35 +460,35 @@ namespace BSKProjekt1
                 }
                 if (stringKey.Contains("<D>"))
                 {
-                    key.D = Convert.FromBase64String(stringKey.Substring(stringKey.IndexOf("<D>") + 3, stringKey.IndexOf("</D>") - stringKey.IndexOf("<D>") - 3));
+                    key.D = Convert.FromBase64String(takeValueFromNode(stringKey,"<D>"));
                 }
                 if (stringKey.Contains("<DP>"))
                 {
-                    key.DP = Convert.FromBase64String(stringKey.Substring(stringKey.IndexOf("<DP>") + 4, stringKey.IndexOf("</DP>") - stringKey.IndexOf("<DP>") - 4));
+                    key.DP = Convert.FromBase64String(takeValueFromNode(stringKey, "<DP>"));
                 }
                 if (stringKey.Contains("<DQ>"))
                 {
-                    key.DQ = Convert.FromBase64String(stringKey.Substring(stringKey.IndexOf("<DQ>") + 4, stringKey.IndexOf("</DQ>") - stringKey.IndexOf("<DQ>") - 4));
+                    key.DQ = Convert.FromBase64String(takeValueFromNode(stringKey, "<DQ>"));
                 }
                 if (stringKey.Contains("<Exponent>"))
                 {
-                    key.Exponent = Convert.FromBase64String(stringKey.Substring(stringKey.IndexOf("<Exponent>") + 10, stringKey.IndexOf("</Exponent>") - stringKey.IndexOf("<Exponent>") - 10));
+                    key.Exponent = Convert.FromBase64String(takeValueFromNode(stringKey, "<Exponent>"));
                 }
                 if (stringKey.Contains("<InverseQ>"))
                 {
-                    key.InverseQ = Convert.FromBase64String(stringKey.Substring(stringKey.IndexOf("<InverseQ>") + 10, stringKey.IndexOf("</InverseQ>") - stringKey.IndexOf("<InverseQ>") - 10));
+                    key.InverseQ = Convert.FromBase64String(takeValueFromNode(stringKey, "<InverseQ>"));
                 }
                 if (stringKey.Contains("<Modulus>"))
                 {
-                    key.Modulus = Convert.FromBase64String(stringKey.Substring(stringKey.IndexOf("<Modulus>") + 9, stringKey.IndexOf("</Modulus>") - stringKey.IndexOf("<Modulus>") - 9));
+                    key.Modulus = Convert.FromBase64String(takeValueFromNode(stringKey, "<Modulus>"));
                 }
                 if (stringKey.Contains("<P>"))
                 {
-                    key.P = Convert.FromBase64String(stringKey.Substring(stringKey.IndexOf("<P>") + 3, stringKey.IndexOf("</P>") - stringKey.IndexOf("<P>") - 3));
+                    key.P = Convert.FromBase64String(takeValueFromNode(stringKey, "<P>"));
                 }
                 if (stringKey.Contains("<Q>"))
                 {
-                    key.Q = Convert.FromBase64String(stringKey.Substring(stringKey.IndexOf("<Q>") + 3, stringKey.IndexOf("</Q>") - stringKey.IndexOf("<Q>") - 3));
+                    key.Q = Convert.FromBase64String(takeValueFromNode(stringKey, "<Q>"));
                 }
             }
             return key;
@@ -526,35 +506,35 @@ namespace BSKProjekt1
                 {
                     if(line.Contains("<D>"))
                     {
-                        key.D = Convert.FromBase64String(takeValueFromNode(line));
+                        key.D = Convert.FromBase64String(takeValueFromNode(line,"<D>"));
                     }
                     if (line.Contains("<DP>"))
                     {
-                        key.DP = Convert.FromBase64String(takeValueFromNode(line));
+                        key.DP = Convert.FromBase64String(takeValueFromNode(line,"<DP>"));
                     }
                     if (line.Contains("<DQ>"))
                     {
-                        key.DQ = Convert.FromBase64String(takeValueFromNode(line));
+                        key.DQ = Convert.FromBase64String(takeValueFromNode(line,"<DQ>"));
                     }
                     if (line.Contains("<Exponent>"))
                     {
-                        key.Exponent = Convert.FromBase64String(takeValueFromNode(line));
+                        key.Exponent = Convert.FromBase64String(takeValueFromNode(line,"<Exponent>"));
                     }
                     if (line.Contains("<InverseQ>"))
                     {
-                        key.InverseQ = Convert.FromBase64String(takeValueFromNode(line));
+                        key.InverseQ = Convert.FromBase64String(takeValueFromNode(line,"<InverseQ>"));
                     }
                     if (line.Contains("<Modulus>"))
                     {
-                        key.Modulus = Convert.FromBase64String(takeValueFromNode(line));
+                        key.Modulus = Convert.FromBase64String(takeValueFromNode(line,"<Modulus>"));
                     }
                     if (line.Contains("<P>"))
                     {
-                        key.P = Convert.FromBase64String(takeValueFromNode(line));
+                        key.P = Convert.FromBase64String(takeValueFromNode(line,"<P>"));
                     }
                     if (line.Contains("<Q>"))
                     {
-                        key.Q = Convert.FromBase64String(takeValueFromNode(line));
+                        key.Q = Convert.FromBase64String(takeValueFromNode(line,"<Q>"));
                     }
                 }
             }

@@ -117,6 +117,7 @@ namespace BSKProjekt1
             if(plikDeszyfrowaniaTextBox.Text == "")
                 return;
 
+            deszyfratorListView.Items.Clear();
             using (StreamReader stream = new StreamReader(plikDeszyfrowaniaTextBox.Text))
             {
                 string line = "";
